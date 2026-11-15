@@ -1,6 +1,6 @@
 import { CopyCommand } from "@/components/landing/copy-command"
 import { PathDemo } from "@/components/landing/path-demo"
-import { SurveyBackground } from "@/components/landing/survey-background"
+import { GlowBackground } from "@/components/landing/glow-background"
 import { Wordmark } from "@/components/landing/wordmark"
 
 const install = "bun add -g @ruangus/scout"
@@ -8,7 +8,7 @@ const install = "bun add -g @ruangus/scout"
 export default function Home() {
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-background">
-      <SurveyBackground />
+      <GlowBackground />
 
       <div className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-5">
         <header className="flex items-center justify-between">
