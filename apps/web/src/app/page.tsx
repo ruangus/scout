@@ -1,5 +1,5 @@
 import { CopyCommand } from "@/components/landing/copy-command"
-import { PathDemo } from "@/components/landing/path-demo"
+import { AgentSession } from "@/components/landing/agent-session"
 import { GlowBackground } from "@/components/landing/glow-background"
 import { Headline } from "@/components/landing/headline"
 import { Wordmark } from "@/components/landing/wordmark"
@@ -34,7 +34,7 @@ export default function Home() {
         </section>
 
         <section className="animate-rise [animation-delay:120ms]">
-          <PathDemo />
+          <AgentSession />
         </section>
       </div>
     </main>
