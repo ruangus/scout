@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Schema, SchemaTransformation } from "effect";
 
 export const Sha = Schema.String.pipe(
   Schema.check(Schema.isPattern(/^[0-9a-f]{40}$/)),
@@ -21,6 +21,23 @@ export const Repository = Schema.Struct({
 })
 
 export type Repository = typeof Repository.Type
+
+const githubPrefix = /^(?:https:\/\/)?github\.com\//
+const githubSuffix = /(?:\.git)?\/?$/
+
+export const RepositoryUrl = Schema.String.pipe(
+  Schema.check(Schema.isPattern(/^(?:https:\/\/)?github\.com\/[\w.-]+\/[\w.-]+?(?:\.git)?\/?$/, {
+    message: "Expected a GitHub repository URL like https://github.com/<owner>/<repo>"
+  })),
+  Schema.decodeTo(Repository, SchemaTransformation.transform({
+    decode: (url) => {
+      const [owner = "", name = ""] = url.replace(githubPrefix, "").replace(githubSuffix, "").split("/")
+
+      return { owner, name }
+    },
+    encode: (repository) => `https://github.com/${repository.owner}/${repository.name}`
+  }))
+)
 
 export const Snapshot = Schema.Struct({
   repository: Repository,

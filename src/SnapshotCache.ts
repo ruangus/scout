@@ -9,10 +9,6 @@ export const AddResult = Schema.TaggedUnion({
 
 export type AddResult = typeof AddResult.Type
 
-export class InvalidRepositoryUrl extends Schema.TaggedError<InvalidRepositoryUrl>()("InvalidRepositoryUrl", {
-  input: Schema.String
-}) {}
-
 export class ReadFailed extends Schema.TaggedError<ReadFailed>()("ReadFailed", {
   path: Schema.String,
   cause: Schema.Defect()
