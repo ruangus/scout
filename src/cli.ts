@@ -22,7 +22,7 @@ const ScoutError = Schema.Union([
 ])
 
 const printJson = <S extends Schema.Top>(schema: S, print: (line: string) => Effect.Effect<void>) => {
-  const encode = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(schema)))
+  const encode = Schema.toCodecJson(schema).pipe(Schema.fromJsonString, Schema.encodeEffect)
 
   return (value: S["Type"]) => encode(value).pipe(Effect.flatMap(print), Effect.orDie)
 }
@@ -53,9 +53,9 @@ const selectionFrom = Effect.fnUntraced(function* (flags: {
   readonly commit: Option.Option<Sha>
 }) {
   const selections = Array.getSomes([
-    Option.map(flags.branch, (name) => Selection.cases.Branch.make({ name })),
-    Option.map(flags.tag, (name) => Selection.cases.Tag.make({ name })),
-    Option.map(flags.commit, (sha) => Selection.cases.Commit.make({ sha }))
+    flags.branch.pipe(Option.map((name) => Selection.cases.Branch.make({ name }))),
+    flags.tag.pipe(Option.map((name) => Selection.cases.Tag.make({ name }))),
+    flags.commit.pipe(Option.map((sha) => Selection.cases.Commit.make({ sha })))
   ])
 
   if (selections.length > 1) {
@@ -85,9 +85,11 @@ const add = Command.make(
   Effect.fn("cli.add")(function* ({ repository, ...flags }) {
     const selection = yield* selectionFrom(flags)
     const cache = yield* SnapshotCache
-    const result = yield* cache.add(repository, selection).pipe(Effect.tapError(printError))
 
-    yield* printJson(AddResult, Console.log)(result)
+    yield* cache.add(repository, selection).pipe(
+      Effect.tapError(printError),
+      Effect.flatMap(printJson(AddResult, Console.log))
+    )
   })
 ).pipe(
   Command.withDescription("Cache a snapshot of a GitHub repository; without a selector, uses the default branch")
@@ -103,9 +105,11 @@ const list = Command.make(
   },
   Effect.fn("cli.list")(function* ({ query }) {
     const cache = yield* SnapshotCache
-    const snapshots = yield* cache.list(query).pipe(Effect.tapError(printError))
 
-    yield* printJson(Schema.Array(Snapshot), Console.log)(snapshots)
+    yield* cache.list(query).pipe(
+      Effect.tapError(printError),
+      Effect.flatMap(printJson(Schema.Array(Snapshot), Console.log))
+    )
   })
 ).pipe(
   Command.withDescription("List the newest cached snapshot of each selection, with its path and revision")
@@ -116,9 +120,11 @@ const update = Command.make(
   { repository: repositoryName },
   Effect.fn("cli.update")(function* ({ repository }) {
     const cache = yield* SnapshotCache
-    const results = yield* cache.update(repository).pipe(Effect.tapError(printError))
 
-    yield* printJson(Schema.Array(UpdateResult), Console.log)(results)
+    yield* cache.update(repository).pipe(
+      Effect.tapError(printError),
+      Effect.flatMap(printJson(Schema.Array(UpdateResult), Console.log))
+    )
   })
 ).pipe(
   Command.withDescription("Refresh the cached branches of a repository that are older than one hour; tags and commits never change")
@@ -130,9 +136,11 @@ const remove = Command.make(
   Effect.fn("cli.remove")(function* ({ repository, ...flags }) {
     const selection = yield* selectionFrom(flags)
     const cache = yield* SnapshotCache
-    const removed = yield* cache.remove(repository, selection).pipe(Effect.tapError(printError))
 
-    yield* printJson(Schema.Array(Snapshot), Console.log)(removed)
+    yield* cache.remove(repository, selection).pipe(
+      Effect.tapError(printError),
+      Effect.flatMap(printJson(Schema.Array(Snapshot), Console.log))
+    )
   })
 ).pipe(
   Command.withDescription("Remove one cached selection, or every selection of the repository when no selector is given")
@@ -142,9 +150,10 @@ const installSkill = Command.make(
   "install",
   {},
   Effect.fn("cli.skill.install")(function* () {
-    const result = yield* (yield* Skill).install.pipe(Effect.tapError(printError))
-
-    yield* printJson(SkillInstallResult, Console.log)(result)
+    yield* (yield* Skill).install.pipe(
+      Effect.tapError(printError),
+      Effect.flatMap(printJson(SkillInstallResult, Console.log))
+    )
   })
 ).pipe(
   Command.withDescription("Install the scout skill in ~/.agents/skills and link it from ~/.claude/skills")
@@ -160,13 +169,12 @@ const scout = Command.make("scout").pipe(
   Command.withSubcommands([add, list, update, remove, skill])
 )
 
-const SnapshotCacheLive = Layer.unwrap(
-  Effect.gen(function* () {
-    const root = yield* Config.String("SCOUT_HOME").pipe(Config.withDefault(join(homedir(), ".scout")))
+const SnapshotCacheLive = Effect.gen(function* () {
+  const root = yield* Config.String("SCOUT_HOME").pipe(Config.withDefault(join(homedir(), ".scout")))
 
-    return SnapshotCache.layer(root)
-  })
-).pipe(
+  return SnapshotCache.layer(root)
+}).pipe(
+  Layer.unwrap,
   Layer.provide(GitHub.layer),
   Layer.provide(FetchHttpClient.layer)
 )
