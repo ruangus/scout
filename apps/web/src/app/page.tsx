@@ -1,6 +1,7 @@
 import { CopyCommand } from "@/components/landing/copy-command"
 import { PathDemo } from "@/components/landing/path-demo"
 import { GlowBackground } from "@/components/landing/glow-background"
+import { Headline } from "@/components/landing/headline"
 import { Wordmark } from "@/components/landing/wordmark"
 
 const install = "bun add -g @ruangus/scout"
@@ -22,11 +23,7 @@ export default function Home() {
         </header>
 
         <section className="grid gap-8 pt-10 pb-8 md:grid-cols-[1fr_360px] md:items-end lg:pt-14">
-          <h1 className="animate-rise text-5xl leading-[1.02] font-semibold tracking-tight text-foreground lg:text-6xl">
-            Every answer
-            <br />
-            has an address.
-          </h1>
+          <Headline />
           <div className="animate-rise [animation-delay:60ms]">
             <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
               <span className="text-foreground">Your agent reads the code you run, not its memory of it.</span> scout keeps each library
