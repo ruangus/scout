@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 
 const mark = 0.25
 const draw = 0.5
+const box = "-inset-x-[0.14em] top-[0.12em] -bottom-[0.04em]"
 
 function Handle({ className }: { className: string }) {
   return <span className={cn("absolute size-[5px] border border-signal bg-background", className)} />
@@ -16,7 +17,7 @@ function Handle({ className }: { className: string }) {
 export function Headline() {
   return (
     <MotionConfig reducedMotion="user">
-      <h1 className="animate-rise pb-6 text-[3.5rem] leading-[1.02] font-semibold tracking-[-0.04em] text-foreground lg:text-[4.25rem]">
+      <h1 className="animate-rise pb-6 text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.04em] text-foreground sm:text-[3.5rem] lg:text-[4.25rem]">
         <span className="sr-only">Every answer has an address.</span>
         <span aria-hidden="true">
           Every answer
@@ -24,32 +25,49 @@ export function Headline() {
           has an{" "}
           <span className="relative ml-[0.16em] inline-block">
             <motion.span
-              initial={{ clipPath: "inset(-4px 105% -4px -4px)" }}
-              animate={{ clipPath: "inset(-4px -2% -4px -4px)" }}
+              initial={{ clipPath: "inset(0% 100% 100% 0%)" }}
+              animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
               transition={{ duration: draw, ease: easeInOut, delay: mark }}
-              className="absolute -inset-x-[0.14em] top-[0.12em] -bottom-[0.04em] border border-signal/60 bg-signal/[0.07]"
+              className={cn("absolute", box)}
             >
-              <Handle className="-top-[3px] -left-[3px]" />
-              <Handle className="-top-[3px] -right-[3px]" />
-              <Handle className="-bottom-[3px] -left-[3px]" />
-              <Handle className="-right-[3px] -bottom-[3px]" />
+              <span className="absolute inset-0 border-t border-l border-signal/60 bg-signal/[0.07]" />
+              <motion.span
+                initial={{ transform: "translate(-100%, -100%)" }}
+                animate={{ transform: "translate(0%, 0%)" }}
+                transition={{ duration: draw, ease: easeInOut, delay: mark }}
+                className="absolute inset-0 border-r border-b border-signal/60"
+              />
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15, ease: easeOut, delay: mark + draw }}
+              className={cn("absolute", box)}
+            >
+              <Handle className="-top-[2px] -left-[2px]" />
+              <Handle className="-top-[2px] -right-[2px]" />
+              <Handle className="-bottom-[2px] -left-[2px]" />
+              <Handle className="-right-[2px] -bottom-[2px]" />
             </motion.span>
             <span className="relative inline-block pr-[0.04em] font-serif text-[1.14em] font-normal tracking-[-0.01em] italic">
               address<span className="text-signal">.</span>
             </span>
             <motion.span
-              initial={{ transform: "translateX(-100%)" }}
-              animate={{ transform: "translateX(0%)" }}
+              initial={{ transform: "translate(-100%, -100%)" }}
+              animate={{ transform: "translate(0%, 0%)" }}
               transition={{ duration: draw, ease: easeInOut, delay: mark }}
-              className="pointer-events-none absolute -inset-x-[0.14em] -bottom-[0.04em] h-0"
+              className={cn("pointer-events-none absolute", box)}
             >
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15, ease: easeOut, delay: mark - 0.05 }}
-                className="absolute top-0 -right-3 flex items-start gap-0.5 tracking-normal"
+                className="absolute top-full left-full flex items-start gap-0.5 tracking-normal"
               >
-                <HugeiconsIcon icon={Cursor02Icon} size={20} strokeWidth={1.5} className="-translate-x-1 -translate-y-1 fill-signal text-signal" />
+                <span className="relative size-5 shrink-0 -translate-x-1 -translate-y-1">
+                  <HugeiconsIcon icon={Cursor02Icon} size={20} strokeWidth={3.5} className="absolute inset-0 fill-white text-white" />
+                  <HugeiconsIcon icon={Cursor02Icon} size={20} strokeWidth={1.5} className="relative fill-signal text-signal" />
+                </span>
                 <span className="mt-3.5 rounded-[4px] bg-signal px-1.5 py-0.5 font-mono text-[11px] leading-none font-medium text-signal-foreground">
                   agent
                 </span>
