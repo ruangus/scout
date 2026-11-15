@@ -1,0 +1,28 @@
+{
+  "name": "scout",
+  "description": "Read-only snapshots of GitHub repositories for coding agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruangus/scout.git"
+  },
+  "type": "module",
+  "private": true,
+  "bin": {
+    "scout": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "bun check",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.1.4",
+    "effect": "4.1.4"
+  }
+}

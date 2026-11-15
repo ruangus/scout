@@ -1,3 +1,5 @@
+<img src="./apps/web/src/app/icon.svg" alt="" width="64" height="64">
+
 # scout
 
 [![License][license-src]][license-href]
@@ -18,7 +20,7 @@ Requires [Bun](https://bun.sh) 1.4 or newer.
 git clone https://github.com/ruangus/scout
 cd scout
 bun install
-bun link
+cd packages/cli && bun link
 scout skill install
 ```
 
