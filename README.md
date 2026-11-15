@@ -26,13 +26,45 @@ scout skill install
 
 ## Usage
 
+Most of the time your agent runs scout for you. These are the same commands, for when you want to drive it yourself.
+
+### Add a repository
+
 ```bash
-scout add https://github.com/effect-ts/effect                      # default branch
-scout add https://github.com/effect-ts/effect --tag effect@4.1.4   # or --branch, --commit
-scout list effect                                                  # what is cached, and where
-scout update effect-ts/effect                                      # refresh cached branches
-scout remove effect-ts/effect --tag effect@4.1.4                   # drop a snapshot
+scout add https://github.com/effect-ts/effect
 ```
+
+Downloads the default branch. To pin the version you depend on, pass one of `--branch`, `--tag`, or `--commit`:
+
+```bash
+scout add https://github.com/effect-ts/effect --tag effect@4.1.4
+```
+
+### See what is cached
+
+```bash
+scout list
+scout list effect
+```
+
+Shows every snapshot with the folder to read and the commit it holds. Add a word to narrow the list by repository name.
+
+### Keep branches current
+
+```bash
+scout update effect-ts/effect
+```
+
+Brings the cached branches of a repository up to date with GitHub. Tags and commits never move, so they stay as they are.
+
+### Remove a snapshot
+
+```bash
+scout remove effect-ts/effect --tag effect@4.1.4
+scout remove effect-ts/effect
+```
+
+Removes one version, or the whole repository when you pass no option.
 
 Run `scout --help` for every option.
 
