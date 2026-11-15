@@ -30,6 +30,8 @@ export class SnapshotCache extends Context.Service<SnapshotCache, {
     AddResult,
     RepositoryNotFound | RefNotFound | RateLimited | RemoteUnavailable | ReadFailed | WriteFailed
   >
+
+  list(query: Option.Option<string>): Effect.Effect<ReadonlyArray<Snapshot>, ReadFailed>
 }>()("scout/SnapshotCache") {
   static readonly layer = (root: string) =>
     Layer.effect(
@@ -62,12 +64,18 @@ export class SnapshotCache extends Context.Service<SnapshotCache, {
           return yield* Schema.decodeUnknownEffect(SnapshotJson)(text).pipe(Effect.mapError(readFailed(file)))
         })
 
-        const findCached = Effect.fnUntraced(function* (directory: string) {
+        const entries = Effect.fnUntraced(function* (directory: string) {
           const exists = yield* fs.exists(directory).pipe(Effect.mapError(readFailed(directory)))
 
-          if (!exists) return Option.none<Snapshot>()
+          if (!exists) return []
 
-          const revisions = yield* fs.readDirectory(directory).pipe(Effect.mapError(readFailed(directory)))
+          const names = yield* fs.readDirectory(directory).pipe(Effect.mapError(readFailed(directory)))
+
+          return Array.sort(names.filter((name) => !name.startsWith(".")), Order.String)
+        })
+
+        const findCached = Effect.fnUntraced(function* (directory: string) {
+          const revisions = yield* entries(directory)
           const snapshots = yield* Effect.forEach(revisions, (revision) => readSnapshot(path.join(directory, revision)))
 
           if (!Array.isReadonlyArrayNonEmpty(snapshots)) return Option.none<Snapshot>()
@@ -136,7 +144,35 @@ export class SnapshotCache extends Context.Service<SnapshotCache, {
           return AddResult.cases.Downloaded.make({ snapshot })
         })
 
-        return SnapshotCache.of({ add })
+        const list = Effect.fn("SnapshotCache.list")(function* (query: Option.Option<string>) {
+          const host = path.join(root, "github.com")
+
+          const matches = (owner: string, name: string) =>
+            Option.match(query, {
+              onNone: () => true,
+              onSome: (text) => `${owner}/${name}`.toLowerCase().includes(text.toLowerCase())
+            })
+
+          const snapshots: Array<Snapshot> = []
+
+          for (const owner of yield* entries(host)) {
+            for (const name of yield* entries(path.join(host, owner))) {
+              if (!matches(owner, name)) continue
+
+              for (const kind of yield* entries(path.join(host, owner, name))) {
+                for (const ref of yield* entries(path.join(host, owner, name, kind))) {
+                  const cached = yield* findCached(path.join(host, owner, name, kind, ref))
+
+                  if (Option.isSome(cached)) snapshots.push(cached.value)
+                }
+              }
+            }
+          }
+
+          return snapshots
+        })
+
+        return SnapshotCache.of({ add, list })
       })
     )
 }

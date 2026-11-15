@@ -5,7 +5,7 @@ import { Argument, CliError, Command, Flag } from "effect/cli"
 import { FetchHttpClient } from "effect/http"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { RepositoryUrl, Selection, Sha } from "./domain.ts"
+import { RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
 import { GitHub, RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
 import { AddResult, ReadFailed, SnapshotCache, WriteFailed } from "./SnapshotCache.ts"
 
@@ -66,9 +66,30 @@ const add = Command.make(
   Command.withDescription("Cache a shallow snapshot of a GitHub repository; without a selector, uses the default branch")
 )
 
+const list = Command.make(
+  "list",
+  {
+    query: Argument.String("query").pipe(
+      Argument.withDescription("Text to match against owner/repo, case-insensitive"),
+      Argument.optional
+    )
+  },
+  Effect.fn("cli.list")(function* ({ query }) {
+    const cache = yield* SnapshotCache
+
+    const snapshots = yield* cache.list(query).pipe(
+      Effect.tapError(printJson(ReadFailed, Console.error))
+    )
+
+    yield* printJson(Schema.Array(Snapshot), Console.log)(snapshots)
+  })
+).pipe(
+  Command.withDescription("List the newest cached snapshot of each selection, with its path and revision")
+)
+
 const scout = Command.make("scout").pipe(
   Command.withDescription("Manage source snapshots of GitHub repositories for agents"),
-  Command.withSubcommands([add])
+  Command.withSubcommands([add, list])
 )
 
 const SnapshotCacheLive = Layer.unwrap(

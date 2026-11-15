@@ -49,15 +49,20 @@ const makeGitHub = () => {
   return { calls, layer }
 }
 
-const add = (root: string, github: Layer.Layer<GitHub>, selection: Option.Option<Selection>) =>
+const withCache = <A, E>(
+  root: string,
+  github: Layer.Layer<GitHub>,
+  use: (cache: SnapshotCache["Service"]) => Effect.Effect<A, E>
+) =>
   Effect.gen(function* () {
-    const cache = yield* SnapshotCache
-
-    return yield* cache.add(repository, selection)
+    return yield* use(yield* SnapshotCache)
   }).pipe(
     Effect.provide(SnapshotCache.layer(root)),
     Effect.provide(Layer.mergeAll(github, BunFileSystem.layer, BunPath.layer))
   )
+
+const add = (root: string, github: Layer.Layer<GitHub>, selection: Option.Option<Selection>) =>
+  withCache(root, github, (cache) => cache.add(repository, selection))
 
 test("downloads a snapshot of the selected branch", async () => {
   const root = makeRoot()
@@ -102,4 +107,27 @@ test("lets GitHub errors through", async () => {
   const error = await Effect.runPromise(Effect.flip(add(root, github, Option.none())))
 
   expect(error._tag).toBe("RepositoryNotFound")
+})
+
+test("lists nothing when the cache is empty", async () => {
+  const root = makeRoot()
+  const snapshots = await Effect.runPromise(withCache(root, makeGitHub().layer, (cache) => cache.list(Option.none())))
+
+  expect(snapshots).toEqual([])
+})
+
+test("lists the snapshots of repositories matching the query", async () => {
+  const root = makeRoot()
+  const github = makeGitHub().layer
+
+  const snapshots = await Effect.runPromise(withCache(root, github, (cache) =>
+    Effect.gen(function* () {
+      const widget = yield* cache.add(repository, Option.some(main))
+
+      yield* cache.add({ owner: "acme", name: "gadget" }, Option.some(main))
+
+      return { widget, listed: yield* cache.list(Option.some("WIDGET")) }
+    })))
+
+  expect(snapshots.listed).toEqual([snapshots.widget.snapshot])
 })
