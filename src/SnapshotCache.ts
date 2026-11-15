@@ -1,5 +1,6 @@
 import { Context, Effect, Option, Schema } from "effect";
-import { Repository, Selection, type Snapshot } from "./domain.ts"
+import type { Repository, Selection, Snapshot } from "./domain.ts"
+import type { RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
 
 export type AddResult =
   | { readonly _tag: "AlreadyCached"; readonly snapshot: Snapshot }
@@ -9,10 +10,6 @@ export class InvalidRepositoryUrl extends Schema.TaggedError<InvalidRepositoryUr
   input: Schema.String
 }) {}
 
-export class RepositoryNotFound extends Schema.TaggedError<RepositoryNotFound>()("RepositoryNotFound", {
-  repository: Repository
-}) {}
-
 export class ReadFailed extends Schema.TaggedError<ReadFailed>()("ReadFailed", {
   path: Schema.String,
   cause: Schema.Defect()
@@ -20,19 +17,6 @@ export class ReadFailed extends Schema.TaggedError<ReadFailed>()("ReadFailed", {
 
 export class WriteFailed extends Schema.TaggedError<WriteFailed>()("WriteFailed", {
   path: Schema.String,
-  cause: Schema.Defect()
-}) {}
-
-export class RefNotFound extends Schema.TaggedError<RefNotFound>()("RefNotFound", {
-  repository: Repository,
-  selection: Selection
-}) {}
-
-export class RateLimited extends Schema.TaggedError<RateLimited>()("RateLimited", {
-  resetAt: Schema.DateTimeUtc
-}) {}
-
-export class RemoteUnavailable extends Schema.TaggedError<RemoteUnavailable>()("RemoteUnavailable", {
   cause: Schema.Defect()
 }) {}
 
