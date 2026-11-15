@@ -1,5 +1,11 @@
 {
   "name": "scout",
+  "description": "Read-only snapshots of GitHub repositories for coding agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruangus/scout.git"
+  },
   "module": "index.ts",
   "type": "module",
   "private": true,
