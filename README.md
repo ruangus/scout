@@ -1,3 +1,5 @@
+<img src="./apps/web/src/app/icon.svg" alt="" width="64" height="64">
+
 # scout
 
 [![License][license-src]][license-href]
