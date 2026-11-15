@@ -22,6 +22,20 @@ export const Repository = Schema.Struct({
 
 export type Repository = typeof Repository.Type
 
+export const RepositoryName = Schema.String.pipe(
+  Schema.check(Schema.isPattern(/^[\w.-]+\/[\w.-]+$/, {
+    message: "Expected a repository like <owner>/<repo>"
+  })),
+  Schema.decodeTo(Repository, SchemaTransformation.transform({
+    decode: (name) => {
+      const [owner = "", repository = ""] = name.split("/")
+
+      return { owner, name: repository }
+    },
+    encode: (repository) => `${repository.owner}/${repository.name}`
+  }))
+)
+
 const githubPrefix = /^(?:https:\/\/)?github\.com\//
 const githubSuffix = /(?:\.git)?\/?$/
 

@@ -5,17 +5,63 @@ import { Argument, CliError, Command, Flag } from "effect/cli"
 import { FetchHttpClient } from "effect/http"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
+import { RepositoryName, RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
 import { GitHub, RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
-import { AddResult, ReadFailed, SnapshotCache, WriteFailed } from "./SnapshotCache.ts"
+import { AddResult, ReadFailed, SnapshotCache, UpdateResult, WriteFailed } from "./SnapshotCache.ts"
 
-const AddError = Schema.Union([RepositoryNotFound, RefNotFound, RateLimited, RemoteUnavailable, ReadFailed, WriteFailed])
+const ScoutError = Schema.Union([RepositoryNotFound, RefNotFound, RateLimited, RemoteUnavailable, ReadFailed, WriteFailed])
 
 const printJson = <S extends Schema.Top>(schema: S, print: (line: string) => Effect.Effect<void>) => {
   const encode = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(schema)))
 
   return (value: S["Type"]) => encode(value).pipe(Effect.flatMap(print), Effect.orDie)
 }
+
+const printError = printJson(ScoutError, Console.error)
+
+const selectors = {
+  branch: Flag.String("branch").pipe(
+    Flag.withDescription("Branch name"),
+    Flag.withSchema(Schema.NonEmptyString),
+    Flag.optional
+  ),
+  tag: Flag.String("tag").pipe(
+    Flag.withDescription("Tag name"),
+    Flag.withSchema(Schema.NonEmptyString),
+    Flag.optional
+  ),
+  commit: Flag.String("commit").pipe(
+    Flag.withDescription("Full 40-character commit sha"),
+    Flag.withSchema(Sha),
+    Flag.optional
+  )
+}
+
+const selectionFrom = Effect.fnUntraced(function* (flags: {
+  readonly branch: Option.Option<string>
+  readonly tag: Option.Option<string>
+  readonly commit: Option.Option<Sha>
+}) {
+  const selections = Array.getSomes([
+    Option.map(flags.branch, (name) => Selection.cases.Branch.make({ name })),
+    Option.map(flags.tag, (name) => Selection.cases.Tag.make({ name })),
+    Option.map(flags.commit, (sha) => Selection.cases.Commit.make({ sha }))
+  ])
+
+  if (selections.length > 1) {
+    return yield* new CliError.UserError({
+      cause: selections,
+      userMessage: "Pass at most one of --branch, --tag or --commit"
+    })
+  }
+
+  return Array.head(selections)
+})
+
+const repositoryName = Argument.String("owner/repo").pipe(
+  Argument.withDescription("Repository, like effect-ts/effect"),
+  Argument.withSchema(RepositoryName)
+)
 
 const add = Command.make(
   "add",
@@ -24,46 +70,17 @@ const add = Command.make(
       Argument.withDescription("Repository URL, like https://github.com/effect-ts/effect"),
       Argument.withSchema(RepositoryUrl)
     ),
-    branch: Flag.String("branch").pipe(
-      Flag.withDescription("Branch to snapshot"),
-      Flag.withSchema(Schema.NonEmptyString),
-      Flag.optional
-    ),
-    tag: Flag.String("tag").pipe(
-      Flag.withDescription("Tag to snapshot"),
-      Flag.withSchema(Schema.NonEmptyString),
-      Flag.optional
-    ),
-    commit: Flag.String("commit").pipe(
-      Flag.withDescription("Full 40-character commit sha to snapshot"),
-      Flag.withSchema(Sha),
-      Flag.optional
-    )
+    ...selectors
   },
-  Effect.fn("cli.add")(function* ({ repository, branch, tag, commit }) {
-    const selections = Array.getSomes([
-      Option.map(branch, (name) => Selection.cases.Branch.make({ name })),
-      Option.map(tag, (name) => Selection.cases.Tag.make({ name })),
-      Option.map(commit, (sha) => Selection.cases.Commit.make({ sha }))
-    ])
-
-    if (selections.length > 1) {
-      return yield* new CliError.UserError({
-        cause: selections,
-        userMessage: "Pass at most one of --branch, --tag or --commit"
-      })
-    }
-
+  Effect.fn("cli.add")(function* ({ repository, ...flags }) {
+    const selection = yield* selectionFrom(flags)
     const cache = yield* SnapshotCache
-
-    const result = yield* cache.add(repository, Array.head(selections)).pipe(
-      Effect.tapError(printJson(AddError, Console.error))
-    )
+    const result = yield* cache.add(repository, selection).pipe(Effect.tapError(printError))
 
     yield* printJson(AddResult, Console.log)(result)
   })
 ).pipe(
-  Command.withDescription("Cache a shallow snapshot of a GitHub repository; without a selector, uses the default branch")
+  Command.withDescription("Cache a snapshot of a GitHub repository; without a selector, uses the default branch")
 )
 
 const list = Command.make(
@@ -76,10 +93,7 @@ const list = Command.make(
   },
   Effect.fn("cli.list")(function* ({ query }) {
     const cache = yield* SnapshotCache
-
-    const snapshots = yield* cache.list(query).pipe(
-      Effect.tapError(printJson(ReadFailed, Console.error))
-    )
+    const snapshots = yield* cache.list(query).pipe(Effect.tapError(printError))
 
     yield* printJson(Schema.Array(Snapshot), Console.log)(snapshots)
   })
@@ -87,9 +101,36 @@ const list = Command.make(
   Command.withDescription("List the newest cached snapshot of each selection, with its path and revision")
 )
 
+const update = Command.make(
+  "update",
+  { repository: repositoryName },
+  Effect.fn("cli.update")(function* ({ repository }) {
+    const cache = yield* SnapshotCache
+    const results = yield* cache.update(repository).pipe(Effect.tapError(printError))
+
+    yield* printJson(Schema.Array(UpdateResult), Console.log)(results)
+  })
+).pipe(
+  Command.withDescription("Refresh the cached branches of a repository that are older than one hour; tags and commits never change")
+)
+
+const remove = Command.make(
+  "remove",
+  { repository: repositoryName, ...selectors },
+  Effect.fn("cli.remove")(function* ({ repository, ...flags }) {
+    const selection = yield* selectionFrom(flags)
+    const cache = yield* SnapshotCache
+    const removed = yield* cache.remove(repository, selection).pipe(Effect.tapError(printError))
+
+    yield* printJson(Schema.Array(Snapshot), Console.log)(removed)
+  })
+).pipe(
+  Command.withDescription("Remove one cached selection, or every selection of the repository when no selector is given")
+)
+
 const scout = Command.make("scout").pipe(
   Command.withDescription("Manage source snapshots of GitHub repositories for agents"),
-  Command.withSubcommands([add, list])
+  Command.withSubcommands([add, list, update, remove])
 )
 
 const SnapshotCacheLive = Layer.unwrap(

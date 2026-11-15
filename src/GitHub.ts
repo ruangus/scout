@@ -51,22 +51,27 @@ export class GitHub extends Context.Service<GitHub, {
         HttpClient.retryTransient({ schedule: Schedule.exponential(200), times: 2 })
       )
 
+      const failIfRateLimited = (response: HttpClientResponse.HttpClientResponse) =>
+        Headers.get(response.headers, "x-ratelimit-remaining").pipe(
+          Option.filter((remaining) => remaining === "0"),
+          Option.flatMap(() => Headers.get(response.headers, "x-ratelimit-reset")),
+          Option.flatMap((seconds) => DateTime.make(Number(seconds) * 1000)),
+          Option.match({
+            onNone: () => Effect.succeed(response),
+            onSome: (resetAt) => Effect.fail(new RateLimited({ resetAt }))
+          })
+        )
+
       const get = Effect.fnUntraced(function* (url: string, accept: string) {
         const response = yield* client.get(url, { headers: { accept } }).pipe(
           Effect.mapError((cause) => new RemoteUnavailable({ cause }))
         )
 
-        const exhausted = Headers.get(response.headers, "x-ratelimit-remaining").pipe(Option.contains("0"))
-
-        const resetAt = Headers.get(response.headers, "x-ratelimit-reset").pipe(
-          Option.flatMap((seconds) => DateTime.make(Number(seconds) * 1000))
-        )
-
-        if ((response.status === HttpStatus.fromLiteral("Forbidden") || response.status === HttpStatus.fromLiteral("TooManyRequests")) && exhausted && Option.isSome(resetAt)) {
-          return yield* new RateLimited({ resetAt: resetAt.value })
-        }
-
-        return response
+        return yield* HttpClientResponse.matchStatus(response, {
+          [HttpStatus.fromLiteral("Forbidden")]: failIfRateLimited,
+          [HttpStatus.fromLiteral("TooManyRequests")]: failIfRateLimited,
+          orElse: (other) => Effect.succeed(other)
+        })
       })
 
       const unexpected = (response: HttpClientResponse.HttpClientResponse) =>

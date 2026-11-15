@@ -1,16 +1,19 @@
 import { BunFileSystem, BunPath } from "@effect/platform-bun"
 import { afterEach, expect, test } from "bun:test"
 import { Effect, Layer, Option, Schema } from "effect"
+import { TestClock } from "effect/testing"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Selection, Sha, type Repository } from "./domain.ts"
 import { GitHub, RepositoryNotFound } from "./GitHub.ts"
-import { SnapshotCache } from "./SnapshotCache.ts"
+import { branchTtl, SnapshotCache } from "./SnapshotCache.ts"
 
 const repository: Repository = { owner: "acme", name: "widget" }
 const sha = Schema.decodeUnknownSync(Sha)("289a53f7b1fc40049219c6e69022db2fb859c356")
 const main = Selection.cases.Branch.make({ name: "main" })
+const v1 = Selection.cases.Tag.make({ name: "v1" })
+const newerSha = Schema.decodeUnknownSync(Sha)("1b807a063982a2463017d055ef6fc36240222217")
 
 const tarball = await new Bun.Archive(
   { "acme-widget-289a53f/README.md": "hello from widget" },
@@ -32,12 +35,13 @@ const makeRoot = () => {
 
 const makeGitHub = () => {
   const calls = { tarball: 0 }
+  const remote = { sha }
 
   const layer = Layer.succeed(
     GitHub,
     GitHub.of({
       defaultBranch: () => Effect.succeed("main"),
-      resolve: () => Effect.succeed(sha),
+      resolve: () => Effect.sync(() => remote.sha),
       tarball: () => Effect.sync(() => {
         calls.tarball++
 
@@ -46,7 +50,7 @@ const makeGitHub = () => {
     })
   )
 
-  return { calls, layer }
+  return { calls, remote, layer }
 }
 
 const withCache = <A, E>(
@@ -58,7 +62,8 @@ const withCache = <A, E>(
     return yield* use(yield* SnapshotCache)
   }).pipe(
     Effect.provide(SnapshotCache.layer(root)),
-    Effect.provide(Layer.mergeAll(github, BunFileSystem.layer, BunPath.layer))
+    Effect.provide(Layer.mergeAll(github, BunFileSystem.layer, BunPath.layer)),
+    Effect.provide(TestClock.layer())
   )
 
 const add = (root: string, github: Layer.Layer<GitHub>, selection: Option.Option<Selection>) =>
@@ -130,4 +135,92 @@ test("lists the snapshots of repositories matching the query", async () => {
     })))
 
   expect(snapshots.listed).toEqual([snapshots.widget.snapshot])
+})
+
+test("leaves a branch alone while it is within the TTL", async () => {
+  const root = makeRoot()
+
+  const results = await Effect.runPromise(withCache(root, makeGitHub().layer, (cache) =>
+    Effect.gen(function* () {
+      yield* cache.add(repository, Option.some(main))
+      yield* TestClock.adjust("30 minutes")
+
+      return yield* cache.update(repository)
+    })))
+
+  expect(results.map((result) => result._tag)).toEqual(["Fresh"])
+})
+
+test("refreshes fetchedAt when a stale branch has not moved", async () => {
+  const root = makeRoot()
+  const github = makeGitHub()
+
+  const results = await Effect.runPromise(withCache(root, github.layer, (cache) =>
+    Effect.gen(function* () {
+      yield* cache.add(repository, Option.some(main))
+      yield* TestClock.adjust(branchTtl)
+      yield* TestClock.adjust("1 minute")
+
+      return { updated: yield* cache.update(repository), listed: yield* cache.list(Option.none()) }
+    })))
+
+  expect(results.updated.map((result) => result._tag)).toEqual(["Unchanged"])
+  expect(results.listed).toEqual(results.updated.map((result) => result.snapshot))
+  expect(github.calls.tarball).toBe(1)
+})
+
+test("publishes a new revision when a stale branch has moved", async () => {
+  const root = makeRoot()
+  const github = makeGitHub()
+
+  const results = await Effect.runPromise(withCache(root, github.layer, (cache) =>
+    Effect.gen(function* () {
+      const added = yield* cache.add(repository, Option.some(main))
+
+      github.remote.sha = newerSha
+      yield* TestClock.adjust("2 hours")
+
+      return { added, updated: yield* cache.update(repository), listed: yield* cache.list(Option.none()) }
+    })))
+
+  const [updated] = results.updated
+
+  expect(updated?._tag).toBe("Updated")
+  expect(updated?.snapshot.sha).toBe(newerSha)
+  expect(updated?.snapshot.path).not.toBe(results.added.snapshot.path)
+  expect(results.listed).toEqual(results.updated.map((result) => result.snapshot))
+})
+
+test("never updates tags", async () => {
+  const root = makeRoot()
+
+  const results = await Effect.runPromise(withCache(root, makeGitHub().layer, (cache) =>
+    Effect.gen(function* () {
+      yield* cache.add(repository, Option.some(v1))
+      yield* TestClock.adjust("2 hours")
+
+      return yield* cache.update(repository)
+    })))
+
+  expect(results).toEqual([])
+})
+
+test("removes one selection or the whole repository", async () => {
+  const root = makeRoot()
+
+  const results = await Effect.runPromise(withCache(root, makeGitHub().layer, (cache) =>
+    Effect.gen(function* () {
+      const branch = yield* cache.add(repository, Option.some(main))
+      const tag = yield* cache.add(repository, Option.some(v1))
+      const removedTag = yield* cache.remove(repository, Option.some(v1))
+      const afterTag = yield* cache.list(Option.none())
+      const removedRest = yield* cache.remove(repository, Option.none())
+
+      return { branch, tag, removedTag, afterTag, removedRest, afterAll: yield* cache.list(Option.none()) }
+    })))
+
+  expect(results.removedTag).toEqual([results.tag.snapshot])
+  expect(results.afterTag).toEqual([results.branch.snapshot])
+  expect(results.removedRest).toEqual([results.branch.snapshot])
+  expect(results.afterAll).toEqual([])
 })
