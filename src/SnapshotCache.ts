@@ -1,5 +1,6 @@
 import { Array, Context, DateTime, Duration, Effect, FileSystem, Layer, Option, Order, Path, Schema } from "effect";
 import { Selection, Snapshot, type Repository, type Sha } from "./domain.ts"
+import { readFailed, WriteFailed, writeFailed, type ReadFailed } from "./FileErrors.ts"
 import { GitHub, type RateLimited, type RefNotFound, type RemoteUnavailable, type RepositoryNotFound } from "./GitHub.ts"
 
 export const AddResult = Schema.TaggedUnion({
@@ -16,16 +17,6 @@ export const UpdateResult = Schema.TaggedUnion({
 })
 
 export type UpdateResult = typeof UpdateResult.Type
-
-export class ReadFailed extends Schema.TaggedError<ReadFailed>()("ReadFailed", {
-  path: Schema.String,
-  cause: Schema.Defect()
-}) {}
-
-export class WriteFailed extends Schema.TaggedError<WriteFailed>()("WriteFailed", {
-  path: Schema.String,
-  cause: Schema.Defect()
-}) {}
 
 export const branchTtl = Duration.hours(1)
 
@@ -62,9 +53,6 @@ export class SnapshotCache extends Context.Service<SnapshotCache, {
         const github = yield* GitHub
         const fs = yield* FileSystem.FileSystem
         const path = yield* Path.Path
-
-        const readFailed = (at: string) => (cause: unknown) => new ReadFailed({ path: at, cause })
-        const writeFailed = (at: string) => (cause: unknown) => new WriteFailed({ path: at, cause })
 
         const host = path.join(root, "github.com")
 

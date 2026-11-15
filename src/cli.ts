@@ -7,9 +7,19 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 import { RepositoryName, RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
 import { GitHub, RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
-import { AddResult, ReadFailed, SnapshotCache, UpdateResult, WriteFailed } from "./SnapshotCache.ts"
+import { ReadFailed, WriteFailed } from "./FileErrors.ts"
+import { Skill, SkillConflict, SkillInstallResult } from "./Skill.ts"
+import { AddResult, SnapshotCache, UpdateResult } from "./SnapshotCache.ts"
 
-const ScoutError = Schema.Union([RepositoryNotFound, RefNotFound, RateLimited, RemoteUnavailable, ReadFailed, WriteFailed])
+const ScoutError = Schema.Union([
+  RepositoryNotFound,
+  RefNotFound,
+  RateLimited,
+  RemoteUnavailable,
+  ReadFailed,
+  WriteFailed,
+  SkillConflict
+])
 
 const printJson = <S extends Schema.Top>(schema: S, print: (line: string) => Effect.Effect<void>) => {
   const encode = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(schema)))
@@ -128,9 +138,26 @@ const remove = Command.make(
   Command.withDescription("Remove one cached selection, or every selection of the repository when no selector is given")
 )
 
+const installSkill = Command.make(
+  "install",
+  {},
+  Effect.fn("cli.skill.install")(function* () {
+    const result = yield* (yield* Skill).install.pipe(Effect.tapError(printError))
+
+    yield* printJson(SkillInstallResult, Console.log)(result)
+  })
+).pipe(
+  Command.withDescription("Install the scout skill in ~/.agents/skills and link it from ~/.claude/skills")
+)
+
+const skill = Command.make("skill").pipe(
+  Command.withDescription("Manage the agent skill that teaches agents to use scout"),
+  Command.withSubcommands([installSkill])
+)
+
 const scout = Command.make("scout").pipe(
   Command.withDescription("Manage source snapshots of GitHub repositories for agents"),
-  Command.withSubcommands([add, list, update, remove])
+  Command.withSubcommands([add, list, update, remove, skill])
 )
 
 const SnapshotCacheLive = Layer.unwrap(
@@ -146,7 +173,7 @@ const SnapshotCacheLive = Layer.unwrap(
 
 scout.pipe(
   Command.run({ version: "0.1.0" }),
-  Effect.provide(SnapshotCacheLive),
+  Effect.provide(Layer.mergeAll(SnapshotCacheLive, Skill.layer(homedir()))),
   Effect.provide(BunServices.layer),
   BunRuntime.runMain({ disableErrorReporting: true })
 )
