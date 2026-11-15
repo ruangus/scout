@@ -28,8 +28,9 @@ export default function Home() {
             has an address.
           </h1>
           <div className="animate-rise [animation-delay:60ms]">
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-              scout keeps the source of the libraries you use at a path on your disk, pinned to the branch, tag, or commit you run. Your agent reads it there, instead of from memory.
+            <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
+              <span className="text-foreground">Your agent reads the code you run, not its memory of it.</span> scout keeps each library
+              on disk, pinned to the version you use.
             </p>
             <CopyCommand command={install} className="mt-4" />
           </div>
