@@ -17,12 +17,13 @@ function Handle({ className }: { className: string }) {
 export function Headline() {
   return (
     <MotionConfig reducedMotion="user">
-      <h1 className="animate-rise pb-6 text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.04em] text-foreground sm:text-[3.5rem] lg:text-[4.25rem]">
+      <h1 className="animate-rise pb-6 text-[3rem] leading-[1.02] font-semibold tracking-[-0.04em] text-foreground sm:text-[3.5rem] lg:text-[4.25rem]">
         <span className="sr-only">Every answer has an address.</span>
         <span aria-hidden="true">
           Every answer
           <br />
           has an{" "}
+          <br className="sm:hidden" />
           <span className="relative ml-[0.16em] inline-block">
             <motion.span
               initial={{ clipPath: "inset(0% 100% 100% 0%)" }}

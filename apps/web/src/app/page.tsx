@@ -25,7 +25,7 @@ export default function Home() {
           </a>
         </header>
 
-        <section className="grid gap-8 pt-10 pb-8 md:grid-cols-[1fr_360px] md:items-end lg:pt-14">
+        <section className="grid gap-4 pt-10 pb-8 md:grid-cols-[1fr_360px] md:items-end md:gap-8 lg:pt-14">
           <Headline />
           <div className="animate-rise [animation-delay:70ms]">
             <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
