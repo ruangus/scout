@@ -1,32 +1,19 @@
 {
-  "name": "scout",
-  "description": "Read-only snapshots of GitHub repositories for coding agents",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ruangus/scout.git"
-  },
-  "module": "index.ts",
-  "type": "module",
+  "name": "scout-monorepo",
   "private": true,
-  "bin": {
-    "scout": "./src/cli.ts"
-  },
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "typecheck": "bun check",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
   },
   "devDependencies": {
     "@oxlint/plugins": "1.93.0",
-    "@types/bun": "latest",
     "oxlint": "1.93.0"
-  },
-  "peerDependencies": {
-    "typescript": "^7"
-  },
-  "dependencies": {
-    "@effect/platform-bun": "4.1.4",
-    "effect": "4.1.4"
   }
 }

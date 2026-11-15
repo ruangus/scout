@@ -1,5 +1,5 @@
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect";
-import skill from "../.agents/skills/scout/SKILL.md" with { type: "text" }
+import skill from "../skill/SKILL.md" with { type: "text" }
 import { readFailed, writeFailed, type ReadFailed, type WriteFailed } from "./FileErrors.ts"
 
 export const skillContent = skill

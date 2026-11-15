@@ -18,7 +18,7 @@ Requires [Bun](https://bun.sh) 1.4 or newer.
 git clone https://github.com/ruangus/scout
 cd scout
 bun install
-bun link
+cd packages/cli && bun link
 scout skill install
 ```
 
