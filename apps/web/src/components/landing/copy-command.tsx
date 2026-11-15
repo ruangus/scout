@@ -1,6 +1,7 @@
 "use client"
 
-import { Check, Copy } from "lucide-react"
+import { Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
@@ -43,7 +44,11 @@ export function CopyCommand({ command, className }: { command: string; className
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
             className="grid place-items-center"
           >
-            {copied ? <Check className="size-4 text-signal" /> : <Copy className="size-4" />}
+            {copied ? (
+              <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} className="text-signal" />
+            ) : (
+              <HugeiconsIcon icon={Copy01Icon} size={16} strokeWidth={1.5} />
+            )}
           </motion.span>
         </AnimatePresence>
       </button>

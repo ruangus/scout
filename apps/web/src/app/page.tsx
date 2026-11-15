@@ -1,3 +1,5 @@
+import { GithubIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { CopyCommand } from "@/components/landing/copy-command"
 import { AgentSession } from "@/components/landing/agent-session"
 import { GlowBackground } from "@/components/landing/glow-background"
@@ -16,8 +18,9 @@ export default function Home() {
           <Wordmark />
           <a
             href="https://github.com/ruangus/scout"
-            className="text-sm text-muted-foreground transition-colors duration-150 ease-out-strong [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-150 ease-out-strong [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
           >
+            <HugeiconsIcon icon={GithubIcon} size={16} strokeWidth={1.5} aria-hidden="true" />
             GitHub
           </a>
         </header>

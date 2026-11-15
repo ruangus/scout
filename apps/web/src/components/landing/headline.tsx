@@ -1,6 +1,7 @@
 "use client"
 
-import { MousePointer2 } from "lucide-react"
+import { Cursor02Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { motion, MotionConfig } from "motion/react"
 import { easeInOut, easeOut } from "@/hooks/use-timeline"
 import { cn } from "@/lib/utils"
@@ -48,7 +49,7 @@ export function Headline() {
                 transition={{ duration: 0.15, ease: easeOut, delay: mark - 0.05 }}
                 className="absolute top-0 -right-3 flex items-start gap-0.5 tracking-normal"
               >
-                <MousePointer2 className="size-5 -translate-x-1 -translate-y-1 fill-signal text-signal" strokeWidth={1.5} />
+                <HugeiconsIcon icon={Cursor02Icon} size={20} strokeWidth={1.5} className="-translate-x-1 -translate-y-1 fill-signal text-signal" />
                 <span className="mt-3.5 rounded-[4px] bg-signal px-1.5 py-0.5 font-mono text-[11px] leading-none font-medium text-signal-foreground">
                   agent
                 </span>
