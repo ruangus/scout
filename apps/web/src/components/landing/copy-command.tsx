@@ -18,22 +18,17 @@ export function CopyCommand({ command, className }: { command: string; className
   }, [copied])
 
   return (
-    <div
-      className={cn(
-        "flex h-11 items-center gap-3 rounded-lg border border-border bg-card/60 pr-1.5 pl-4 font-mono text-sm",
-        className
-      )}
-    >
+    <div className={cn("flex h-12 items-center gap-3 pr-2 pl-4 font-mono text-[0.8125rem]", className)}>
       <span className="text-muted-foreground select-none">$</span>
-      <span className="flex-1 truncate text-foreground">{command}</span>
+      <span className="flex-1 truncate">{command}</span>
       <button
         type="button"
-        aria-label={copied ? "Copied" : "Copy command"}
+        aria-label={copied ? "Copied" : `Copy ${command}`}
         onClick={() => {
           void navigator.clipboard.writeText(command)
           setCopied(true)
         }}
-        className="relative grid size-8 place-items-center rounded-md text-muted-foreground transition-[color,background-color,transform] duration-150 ease-out-strong active:scale-[0.97] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-secondary [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
+        className="grid size-8 place-items-center rounded-md text-muted-foreground transition-transform duration-100 ease-out [-webkit-tap-highlight-color:transparent] hover:bg-secondary hover:text-foreground active:scale-[0.97] motion-reduce:transition-none"
       >
         <AnimatePresence initial={false} mode="popLayout">
           <motion.span
@@ -44,11 +39,7 @@ export function CopyCommand({ command, className }: { command: string; className
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
             className="grid place-items-center"
           >
-            {copied ? (
-              <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} className="text-signal" />
-            ) : (
-              <HugeiconsIcon icon={Copy01Icon} size={16} strokeWidth={1.5} />
-            )}
+            <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={16} strokeWidth={1.5} className={copied ? "text-foreground" : undefined} />
           </motion.span>
         </AnimatePresence>
       </button>
