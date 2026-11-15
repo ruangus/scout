@@ -42,6 +42,7 @@ const at = {
   citation: 6900
 }
 
+const lead = 600
 const end = 7600
 const rowHeight = 26
 
@@ -68,7 +69,8 @@ const enter = {
 }
 
 export function PathDemo() {
-  const { time } = useTimeline(end)
+  const { time: clock } = useTimeline(lead + end)
+  const time = clock - lead
   const prompt = typed(question, time, at.question, 28)
   const walked = walk.filter((_, step) => time >= at.walk + step * at.walkGap)
   const cursor = walked.at(-1)
