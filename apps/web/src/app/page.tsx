@@ -1,4 +1,5 @@
 import { Address } from "@/components/landing/address"
+import { Backdrop } from "@/components/landing/backdrop"
 import { CopyCommand } from "@/components/landing/copy-command"
 import { github, install } from "@/components/landing/demo-content"
 import { Wordmark } from "@/components/landing/wordmark"
@@ -12,7 +13,8 @@ const steps = [
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-240 flex-col px-5 sm:px-8 gap-16">
+    <main className="isolate mx-auto flex min-h-dvh w-full max-w-240 flex-col px-5 sm:px-8 gap-16">
+      <Backdrop />
       <header className="flex h-16 items-center justify-between">
         <Wordmark />
         <a href={github} aria-label="scout on GitHub" className={link}>
