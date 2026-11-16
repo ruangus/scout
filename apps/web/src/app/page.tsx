@@ -27,7 +27,7 @@ export default function Home() {
           scout gives your coding agent your libraries' source at the exact version you run, so every answer cites a file and a line.
         </p>
 
-        <div className="animate-rise mt-9 flex flex-col items-center gap-3 [--rise-distance:6px] [animation-delay:160ms]">
+        <div className="animate-rise mt-6 flex flex-col items-center gap-3 [--rise-distance:6px] [animation-delay:160ms]">
           <CopyPrompt prompt={installPrompt} />
           <p className="text-[0.8125rem] text-muted-foreground">Paste it into Claude Code, Codex, or any coding agent.</p>
         </div>
