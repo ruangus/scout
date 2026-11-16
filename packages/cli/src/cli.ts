@@ -5,6 +5,7 @@ import { Argument, CliError, Command, Flag } from "effect/cli"
 import { FetchHttpClient } from "effect/http"
 import { homedir } from "node:os"
 import { join } from "node:path"
+import packageJson from "../package.json" with { type: "json" }
 import { RepositoryName, RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
 import { GitHub, RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
 import { ReadFailed, WriteFailed } from "./FileErrors.ts"
@@ -180,7 +181,7 @@ const SnapshotCacheLive = Effect.gen(function* () {
 )
 
 scout.pipe(
-  Command.run({ version: "0.1.0" }),
+  Command.run({ version: packageJson.version }),
   Effect.provide(Layer.mergeAll(SnapshotCacheLive, Skill.layer(homedir()))),
   Effect.provide(BunServices.layer),
   BunRuntime.runMain({ disableErrorReporting: true })

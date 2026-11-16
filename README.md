@@ -17,10 +17,7 @@ You rarely run scout yourself: the bundled skill tells your agent when and how.
 Requires [Bun](https://bun.sh) 1.4 or newer.
 
 ```bash
-git clone https://github.com/ruangus/scout
-cd scout
-bun install
-cd packages/cli && bun link
+bun add -g @ruangus/scout
 scout skill install
 ```
 
