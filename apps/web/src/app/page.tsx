@@ -1,15 +1,10 @@
 import { Address } from "@/components/landing/address"
 import { Backdrop } from "@/components/landing/backdrop"
-import { CopyCommand } from "@/components/landing/copy-command"
-import { github, install } from "@/components/landing/demo-content"
+import { CopyPrompt } from "@/components/landing/copy-prompt"
+import { github, installPrompt } from "@/components/landing/demo-content"
 import { Wordmark } from "@/components/landing/wordmark"
 
 const link = "text-muted-foreground hover:text-foreground"
-
-const steps = [
-  { label: "Install the CLI", command: install },
-  { label: "Add the skill to your agent", command: "scout skill install" }
-]
 
 export default function Home() {
   return (
@@ -32,20 +27,9 @@ export default function Home() {
           scout gives your coding agent your libraries' source at the exact version you run, so every answer cites a file and a line.
         </p>
 
-        <div className="animate-rise mx-auto mt-9 max-w-120 text-left [--rise-distance:6px] [animation-delay:160ms]">
-          <ol className="rounded-xl border border-border bg-card">
-            {steps.map((step, index) => (
-              <li key={step.command} className="border-border pb-1 not-first:border-t">
-                <p className="flex gap-3 px-4 pt-3 text-xs text-muted-foreground">
-                  <span aria-hidden="true" className="w-[1ch] font-mono text-foreground/40 tabular-nums">
-                    {index + 1}
-                  </span>
-                  {step.label}
-                </p>
-                <CopyCommand command={step.command} className="h-10" />
-              </li>
-            ))}
-          </ol>
+        <div className="animate-rise mt-9 flex flex-col items-center gap-3 [--rise-distance:6px] [animation-delay:160ms]">
+          <CopyPrompt prompt={installPrompt} />
+          <p className="text-[0.8125rem] text-muted-foreground">Paste it into Claude Code, Codex, or any coding agent.</p>
         </div>
       </section>
 
