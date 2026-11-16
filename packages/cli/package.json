@@ -1,28 +1,36 @@
 {
-  "name": "scout",
+  "name": "@ruangus/scout",
+  "version": "0.1.1",
   "description": "Read-only snapshots of GitHub repositories for coding agents",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruangus/scout.git"
+    "url": "git+https://github.com/ruangus/scout.git",
+    "directory": "packages/cli"
   },
   "type": "module",
-  "private": true,
   "bin": {
-    "scout": "./src/cli.ts"
+    "scout": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "bun build src/cli.ts --target bun --outfile dist/cli.js",
+    "prepack": "bun run build && cp ../../README.md ../../LICENSE .",
+    "postpack": "rm README.md LICENSE",
     "typecheck": "bun check",
     "test": "bun test"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^7"
-  },
-  "dependencies": {
     "@effect/platform-bun": "4.1.4",
+    "@types/bun": "latest",
     "effect": "4.1.4"
   }
 }
