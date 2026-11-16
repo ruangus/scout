@@ -99,7 +99,7 @@ export default async function Image() {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexShrink: 0, fontFamily: font.mono }}>
         <span style={{ display: "flex", fontSize: 28 }}>
-          <span style={{ marginRight: 10, color: color.signal }}>~/</span>scout
+          <span style={{ marginRight: 10, color: color.muted }}>~/</span>scout
         </span>
         <span style={{ fontSize: 22, color: color.muted }}>github.com/ruangus/scout</span>
       </div>
