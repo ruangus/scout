@@ -3,9 +3,6 @@
 import { useReducedMotion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
-export const easeOut = [0.23, 1, 0.32, 1] as const
-export const easeInOut = [0.77, 0, 0.175, 1] as const
-
 export function useTimeline(end: number, playing: boolean) {
   const reduce = useReducedMotion() ?? false
   const [time, setTime] = useState(0)
