@@ -1,18 +1,20 @@
 #!/usr/bin/env bun
 import { BunRuntime, BunServices } from "@effect/platform-bun"
-import { Array, Config, Console, Effect, Layer, Option, Schema } from "effect"
-import { Argument, CliError, Command, Flag } from "effect/cli"
+import { Config, Console, Effect, Layer, Schema } from "effect"
+import { Argument, Command, Flag } from "effect/cli"
 import { FetchHttpClient } from "effect/http"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import packageJson from "../package.json" with { type: "json" }
-import { RepositoryName, RepositoryUrl, Selection, Sha, Snapshot } from "./domain.ts"
+import { ConflictingSelectors, InvalidSha, RepositoryName, RepositoryUrl, selectionFrom, Snapshot } from "./domain.ts"
 import { GitHub, RateLimited, RefNotFound, RemoteUnavailable, RepositoryNotFound } from "./GitHub.ts"
 import { ReadFailed, WriteFailed } from "./FileErrors.ts"
 import { Skill, SkillConflict, SkillInstallResult } from "./Skill.ts"
 import { AddResult, SnapshotCache, UpdateResult } from "./SnapshotCache.ts"
 
 const ScoutError = Schema.Union([
+  ConflictingSelectors,
+  InvalidSha,
   RepositoryNotFound,
   RefNotFound,
   RateLimited,
@@ -43,31 +45,10 @@ const selectors = {
   ),
   commit: Flag.String("commit").pipe(
     Flag.withDescription("Full 40-character commit sha"),
-    Flag.withSchema(Sha),
+    Flag.withSchema(Schema.NonEmptyString),
     Flag.optional
   )
 }
-
-const selectionFrom = Effect.fnUntraced(function* (flags: {
-  readonly branch: Option.Option<string>
-  readonly tag: Option.Option<string>
-  readonly commit: Option.Option<Sha>
-}) {
-  const selections = Array.getSomes([
-    flags.branch.pipe(Option.map((name) => Selection.cases.Branch.make({ name }))),
-    flags.tag.pipe(Option.map((name) => Selection.cases.Tag.make({ name }))),
-    flags.commit.pipe(Option.map((sha) => Selection.cases.Commit.make({ sha })))
-  ])
-
-  if (selections.length > 1) {
-    return yield* new CliError.UserError({
-      cause: selections,
-      userMessage: "Pass at most one of --branch, --tag or --commit"
-    })
-  }
-
-  return Array.head(selections)
-})
 
 const repositoryName = Argument.String("owner/repo").pipe(
   Argument.withDescription("Repository, like effect-ts/effect"),
@@ -84,7 +65,7 @@ const add = Command.make(
     ...selectors
   },
   Effect.fn("cli.add")(function* ({ repository, ...flags }) {
-    const selection = yield* selectionFrom(flags)
+    const selection = yield* selectionFrom(flags).pipe(Effect.tapError(printError))
     const cache = yield* SnapshotCache
 
     yield* cache.add(repository, selection).pipe(
@@ -135,7 +116,7 @@ const remove = Command.make(
   "remove",
   { repository: repositoryName, ...selectors },
   Effect.fn("cli.remove")(function* ({ repository, ...flags }) {
-    const selection = yield* selectionFrom(flags)
+    const selection = yield* selectionFrom(flags).pipe(Effect.tapError(printError))
     const cache = yield* SnapshotCache
 
     yield* cache.remove(repository, selection).pipe(
