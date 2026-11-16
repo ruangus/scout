@@ -23,14 +23,14 @@ export default function Home() {
       </header>
 
       <section className="text-center">
-        <h1 className="animate-rise text-[clamp(2.5rem,7vw,4.5rem)] leading-none font-semibold tracking-[-0.04em] text-balance">
+        <h1 className="animate-rise [--rise-distance:12px] [--rise-duration:600ms] text-[clamp(2.5rem,7vw,4.5rem)] leading-none font-semibold tracking-[-0.04em] text-balance">
           Answers from source, not memory.
         </h1>
-        <p className="animate-rise mx-auto mt-6 max-w-132 text-[1.0625rem] leading-relaxed text-pretty text-muted-foreground [animation-delay:60ms]">
+        <p className="animate-rise mx-auto mt-6 max-w-132 text-[1.0625rem] leading-relaxed text-pretty text-muted-foreground [animation-delay:90ms]">
           scout gives your coding agent your libraries' source at the exact version you run, so every answer cites a file and a line.
         </p>
 
-        <div className="animate-rise mx-auto mt-9 max-w-120 text-left [animation-delay:120ms]">
+        <div className="animate-rise mx-auto mt-9 max-w-120 text-left [--rise-distance:6px] [animation-delay:160ms]">
           <ol className="rounded-xl border border-border bg-card">
             {steps.map((step, index) => (
               <li key={step.command} className="border-border pb-1 not-first:border-t">
@@ -47,7 +47,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="animate-rise [animation-delay:180ms]">
+      <div className="animate-rise [--rise-distance:4px] [animation-delay:210ms]">
         <Address />
       </div>
 

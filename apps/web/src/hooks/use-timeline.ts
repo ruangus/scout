@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react"
 export const easeOut = [0.23, 1, 0.32, 1] as const
 export const easeInOut = [0.77, 0, 0.175, 1] as const
 
-export function useTimeline(end: number) {
+export function useTimeline(end: number, playing: boolean) {
   const reduce = useReducedMotion() ?? false
   const [time, setTime] = useState(0)
   const origin = useRef(0)
@@ -17,6 +17,8 @@ export function useTimeline(end: number) {
 
       return
     }
+
+    if (!playing) return
 
     origin.current = performance.now()
 
@@ -33,7 +35,7 @@ export function useTimeline(end: number) {
     frame = requestAnimationFrame(tick)
 
     return () => cancelAnimationFrame(frame)
-  }, [end, reduce])
+  }, [end, playing, reduce])
 
   return { time, reduce }
 }

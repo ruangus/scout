@@ -1,25 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useInView } from "motion/react"
+import { useRef, useState } from "react"
 import { typed, useTimeline } from "@/hooks/use-timeline"
 import { cn } from "@/lib/utils"
 import { address, answer, question, source, sourceStart } from "./demo-content"
 
-const lead = 600
 const speed = 24
 const asked = question.length * speed
 
 const at = {
-  repository: asked + 400,
-  tag: asked + 650,
+  fetch: asked + 400,
   commit: asked + 900,
   file: asked + 1500,
   line: asked + 1900,
   answer: asked + 2700
 }
 
-const end = lead + at.answer + 400
-const reveal = "transition-opacity duration-300 ease-out motion-reduce:transition-none"
+const reveal = "transition-opacity duration-300 ease-out-strong motion-reduce:transition-none"
+const sweep = "duration-500 ease-out-strong motion-reduce:transition-none"
 
 function Field({ name, shown, accent, children }: { name: string; shown: boolean; accent?: boolean; children: string | number }) {
   return (
@@ -35,17 +34,20 @@ function Field({ name, shown, accent, children }: { name: string; shown: boolean
   )
 }
 
-function Session({ onReplay }: { onReplay: () => void }) {
-  const { time: clock } = useTimeline(end)
+function Session({ lead, onReplay }: { lead: number; onReplay: () => void }) {
+  const figure = useRef<HTMLElement>(null)
+  const inView = useInView(figure, { once: true, amount: 0.4 })
+  const { time: clock } = useTimeline(lead + at.answer + 400, inView)
   const time = clock - lead
   const prompt = typed(question, time, 0, speed)
   const read = time >= at.file
   const cited = time >= at.line
   const answered = time >= at.answer
-  const status = time < at.repository ? "" : time < at.file ? `Fetching ${address.tag}…` : "Reading Effect.ts…"
+  const status = time < at.fetch ? "" : time < at.file ? `Fetching ${address.tag}…` : "Reading Effect.ts…"
 
   return (
     <figure
+      ref={figure}
       aria-label={`An agent is asked: ${question} It fetches ${address.repository} at tag ${address.tag}, reads line ${address.line} of ${address.file}, and answers: ${answer}`}
       className="overflow-hidden rounded-xl border border-border bg-card text-left"
     >
@@ -53,16 +55,16 @@ function Session({ onReplay }: { onReplay: () => void }) {
         <span className="text-muted-foreground select-none">&gt;</span>
         <p className="min-w-0 flex-1">
           {prompt.text}
-          {time < at.repository ? <span className={cn("ml-px inline-block h-[1.1em] w-[0.55em] translate-y-[0.2em] bg-foreground/70", !prompt.typing && "animate-blink")} /> : null}
+          {time < at.fetch ? <span className={cn("ml-px inline-block h-[1.1em] w-[0.55em] translate-y-[0.2em] bg-foreground/70", !prompt.typing && "animate-blink")} /> : null}
         </p>
       </div>
 
       <div aria-hidden="true" className="grid lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <dl className="grid grid-cols-2 content-start gap-x-5 gap-y-5 border-border p-5 max-lg:border-b sm:grid-cols-3 lg:grid-cols-1 lg:border-r">
-          <Field name="Repository" shown={time >= at.repository}>
+          <Field name="Repository" shown={time >= at.fetch}>
             {address.repository}
           </Field>
-          <Field name="Tag" shown={time >= at.tag}>
+          <Field name="Tag" shown={time >= at.fetch}>
             {address.tag}
           </Field>
           <Field name="Commit" shown={time >= at.commit}>
@@ -96,15 +98,16 @@ function Session({ onReplay }: { onReplay: () => void }) {
                     {hit ? (
                       <span
                         className={cn(
-                          "absolute inset-0 origin-left border-l-2 border-signal bg-signal/10 transition-transform duration-500 ease-out-strong motion-reduce:transition-none",
+                          sweep,
+                          "absolute inset-0 origin-left border-l-2 border-signal bg-signal/10 transition-transform",
                           cited ? "scale-x-100" : "scale-x-0"
                         )}
                       />
                     ) : null}
-                    <span className={cn("relative w-[8ch] shrink-0 pr-[2ch] text-right tabular-nums select-none", hit && cited ? "text-signal" : "text-foreground/25")}>
+                    <span className={cn(hit && sweep, "relative w-[8ch] shrink-0 pr-[2ch] text-right tabular-nums transition-colors select-none", hit && cited ? "text-signal" : "text-foreground/25")}>
                       {number}
                     </span>
-                    <span className={cn("relative", hit && cited ? "text-foreground" : "text-foreground/60")}>{code}</span>
+                    <span className={cn(hit && sweep, "relative transition-colors", hit && cited ? "text-foreground" : "text-foreground/60")}>{code}</span>
                   </div>
                 )
               })}
@@ -125,7 +128,7 @@ function Session({ onReplay }: { onReplay: () => void }) {
         <button
           type="button"
           onClick={onReplay}
-          className="-mr-2 shrink-0 rounded-md px-2 py-1 text-muted-foreground transition-transform duration-100 ease-out [-webkit-tap-highlight-color:transparent] hover:text-foreground focus-visible:outline-2 active:scale-[0.97] motion-reduce:transition-none"
+          className="-mr-2 shrink-0 rounded-md motion-reduce:hidden px-2 py-1 text-muted-foreground transition-transform duration-100 ease-out [-webkit-tap-highlight-color:transparent] hover:text-foreground focus-visible:outline-2 active:scale-[0.97] motion-reduce:transition-none"
         >
           Replay
         </button>
@@ -137,5 +140,5 @@ function Session({ onReplay }: { onReplay: () => void }) {
 export function Address() {
   const [run, setRun] = useState(0)
 
-  return <Session key={run} onReplay={() => setRun((value) => value + 1)} />
+  return <Session key={run} lead={run === 0 ? 600 : 150} onReplay={() => setRun((value) => value + 1)} />
 }
